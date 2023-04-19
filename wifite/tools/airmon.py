@@ -39,8 +39,7 @@ class AirmonIface(object):
     @staticmethod
     def menu_header():
         ''' Colored header row for interfaces '''
-        s = '    '  # Space for index #
-        s += 'Interface'.ljust(AirmonIface.INTERFACE_LEN)
+        s = '    ' + 'Interface'.ljust(AirmonIface.INTERFACE_LEN)
         s += 'PHY'.ljust(AirmonIface.PHY_LEN)
         s += 'Driver'.ljust(AirmonIface.DRIVER_LEN)
         s += 'Chipset'.ljust(AirmonIface.CHIPSET_LEN)
@@ -97,7 +96,7 @@ class Airmon(Dependency):
                 continue
 
             phy, interface, driver, chipset = matches.groups()
-            if phy == 'PHY' or phy == 'Interface':
+            if phy in ['PHY', 'Interface']:
                 continue  # Header
 
             if len(interface.strip()) == 0:
@@ -192,7 +191,7 @@ class Airmon(Dependency):
         # Assert that the interface enabled by airmon-ng is in monitor mode
         if enabled_iface not in monitor_interfaces:
             Color.pl('{R}failed{W}')
-            raise Exception('Cannot find %s with Mode:Monitor' % enabled_iface)
+            raise Exception(f'Cannot find {enabled_iface} with Mode:Monitor')
 
         # No errors found; the device 'enabled_iface' was put into Mode:Monitor.
         Color.pl('{G}enabled {C}%s{W}' % enabled_iface)
@@ -207,9 +206,8 @@ class Airmon(Dependency):
         enabled_re = re.compile(r'.*\(mac80211 monitor mode (?:vif )?enabled (?:for [^ ]+ )?on (?:\[\w+\])?(\w+)\)?.*')
 
         for line in airmon_output.split('\n'):
-            matches = enabled_re.match(line)
-            if matches:
-                return matches.group(1)
+            if matches := enabled_re.match(line):
+                return matches[1]
 
         return None
 
@@ -250,17 +248,14 @@ class Airmon(Dependency):
         disabled_iface = None
         enabled_iface = None
         for line in airmon_output.split('\n'):
-            matches = disabled_re.match(line)
-            if matches:
-                disabled_iface = matches.group(1)
+            if matches := disabled_re.match(line):
+                disabled_iface = matches[1]
 
-            matches = removed_re.match(line)
-            if matches:
-                disabled_iface = matches.group(1)
+            if matches := removed_re.match(line):
+                disabled_iface = matches[1]
 
-            matches = enabled_re.match(line)
-            if matches:
-                enabled_iface = matches.group(1)
+            if matches := enabled_re.match(line):
+                enabled_iface = matches[1]
 
         return (disabled_iface, enabled_iface)
 
@@ -333,13 +328,12 @@ class Airmon(Dependency):
         # 2293    NetworkManager
         pid_pname_re = re.compile(r'^\s*(\d+)\s*([a-zA-Z0-9_\-]+)\s*$')
         for line in airmon_output.split('\n'):
-            match = pid_pname_re.match(line)
-            if match:
-                pid = match.group(1)
-                pname = match.group(2)
+            if match := pid_pname_re.match(line):
+                pid = match[1]
+                pname = match[2]
                 pid_pnames.append( (pid, pname) )
 
-        if len(pid_pnames) == 0:
+        if not pid_pnames:
             return
 
         if not Configuration.kill_conflicting_processes:

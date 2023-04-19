@@ -33,9 +33,10 @@ class John(Dependency):
         # Crack john file
         command = [
             'john',
-            '--format=%s' % john_format,
-            '--wordlist', Configuration.wordlist,
-            john_file
+            f'--format={john_format}',
+            '--wordlist',
+            Configuration.wordlist,
+            john_file,
         ]
 
         if show_command:

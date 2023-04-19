@@ -32,10 +32,11 @@ class Cowpatty(Dependency):
         process = Process(command)
         stdout, stderr = process.get_output()
 
-        key = None
-        for line in stdout.split('\n'):
-            if 'The PSK is "' in line:
-                key = line.split('"', 1)[1][:-2]
-                break
-
-        return key
+        return next(
+            (
+                line.split('"', 1)[1][:-2]
+                for line in stdout.split('\n')
+                if 'The PSK is "' in line
+            ),
+            None,
+        )

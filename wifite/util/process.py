@@ -58,10 +58,7 @@ class Process(object):
         stdout = p.stdout().strip()
         stderr = p.stderr().strip()
 
-        if stdout == '' and stderr == '':
-            return False
-
-        return True
+        return stdout != '' or stderr != ''
 
     def __init__(self, command, devnull=False, stdout=PIPE, stderr=PIPE, cwd=None, bufsize=0, stdin=PIPE):
         ''' Starts executing command '''
@@ -203,7 +200,7 @@ if __name__ == '__main__':
     print(out)
     print(err)
 
-    print('"reaver" exists: %s' % Process.exists('reaver'))
+    print(f""""reaver" exists: {Process.exists('reaver')}""")
 
     # Test on never-ending process
     p = Process('yes')

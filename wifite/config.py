@@ -403,7 +403,7 @@ class Configuration(object):
 
         if len(cls.encryption_filter) == 3:
             Color.pl('{+} {C}option:{W} targeting {G}all encrypted networks{W}')
-        elif len(cls.encryption_filter) == 0:
+        elif not cls.encryption_filter:
             # Default to scan all types
             cls.encryption_filter = ['WEP', 'WPA', 'WPS']
         else:
@@ -420,14 +420,19 @@ class Configuration(object):
         for arg in argv:
             if arg in seen: continue
             seen.add(arg)
-            if arg == '-arpreplay':  cls.wep_attacks.append('replay')
-            if arg == '-fragment':   cls.wep_attacks.append('fragment')
-            if arg == '-chopchop':   cls.wep_attacks.append('chopchop')
-            if arg == '-caffelatte': cls.wep_attacks.append('caffelatte')
-            if arg == '-p0841':      cls.wep_attacks.append('p0841')
-            if arg == '-hirte':      cls.wep_attacks.append('hirte')
-
-        if len(cls.wep_attacks) == 0:
+            if arg == '-arpreplay':
+                cls.wep_attacks.append('replay')
+            elif arg == '-caffelatte':
+                cls.wep_attacks.append('caffelatte')
+            elif arg == '-chopchop':
+                cls.wep_attacks.append('chopchop')
+            elif arg == '-fragment':
+                cls.wep_attacks.append('fragment')
+            elif arg == '-hirte':
+                cls.wep_attacks.append('hirte')
+            elif arg == '-p0841':
+                cls.wep_attacks.append('p0841')
+        if not cls.wep_attacks:
             # Use all attacks
             cls.wep_attacks = ['replay',
                 'fragment',

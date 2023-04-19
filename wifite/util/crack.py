@@ -50,7 +50,7 @@ class CrackHelper:
             return
 
         hs_to_crack = cls.get_user_selection(handshakes)
-        all_pmkid = all([hs['type'] == 'PMKID' for hs in hs_to_crack])
+        all_pmkid = all(hs['type'] == 'PMKID' for hs in hs_to_crack)
 
         # Tools for cracking & their dependencies.
         available_tools = {
@@ -62,15 +62,15 @@ class CrackHelper:
         # Identify missing tools
         missing_tools = []
         for tool, dependencies in available_tools.items():
-            missing = [
-                dep for dep in dependencies
+            if missing := [
+                dep
+                for dep in dependencies
                 if not Process.exists(dep.dependency_name)
-            ]
-            if len(missing) > 0:
+            ]:
                 available_tools.pop(tool)
                 missing_tools.append( (tool, missing) )
 
-        if len(missing_tools) > 0:
+        if missing_tools:
             Color.pl('\n{!} {O}Unavailable tools (install to enable):{W}')
             for tool, deps in missing_tools:
                 dep_list = ', '.join([dep.dependency_name for dep in deps])
@@ -89,9 +89,12 @@ class CrackHelper:
 
         try:
             for hs in hs_to_crack:
-                if tool_name != 'hashcat' and hs['type'] == 'PMKID':
-                    if 'hashcat' in missing_tools:
-                        Color.pl('{!} {O}Hashcat is missing, therefore we cannot crack PMKID hash{W}')
+                if (
+                    tool_name != 'hashcat'
+                    and hs['type'] == 'PMKID'
+                    and 'hashcat' in missing_tools
+                ):
+                    Color.pl('{!} {O}Hashcat is missing, therefore we cannot crack PMKID hash{W}')
                 cls.crack(hs, tool_name)
         except KeyboardInterrupt:
             Color.pl('\n{!} {O}Interrupted{W}')
@@ -147,7 +150,7 @@ class CrackHelper:
             date = date.rsplit('.', 1)[0]
             days,hours = date.split('T')
             hours = hours.replace('-', ':')
-            date = '%s %s' % (days, hours)
+            date = f'{days} {hours}'
 
             handshake = {
                 'filename': os.path.join(hs_dir, hs_file),
@@ -233,7 +236,9 @@ class CrackHelper:
         elif hs['type'] == '4-WAY':
             crack_result = cls.crack_4way(hs, tool)
         else:
-            raise ValueError('Cannot crack handshake: Type is not PMKID or 4-WAY. Handshake=%s' % hs)
+            raise ValueError(
+                f'Cannot crack handshake: Type is not PMKID or 4-WAY. Handshake={hs}'
+            )
 
         if crack_result is None:
             # Failed to crack

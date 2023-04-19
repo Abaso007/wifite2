@@ -7,10 +7,9 @@ class Dependency(object):
     # https://stackoverflow.com/a/49024227
     def __init_subclass__(cls):
         for attr_name in cls.required_attr_names:
-            if not attr_name in cls.__dict__:
+            if attr_name not in cls.__dict__:
                 raise NotImplementedError(
-                    'Attribute "{}" has not been overridden in class "{}"' \
-                    .format(attr_name, cls.__name__)
+                    f'Attribute "{attr_name}" has not been overridden in class "{cls.__name__}"'
                 )
 
 
@@ -53,7 +52,7 @@ class Dependency(object):
                 Macchanger
             ]
 
-        missing_required = any([app.fails_dependency_check() for app in apps])
+        missing_required = any(app.fails_dependency_check() for app in apps)
 
         if missing_required:
             Color.pl('{!} {O}At least 1 Required app is missing. Wifite needs Required apps to run{W}')

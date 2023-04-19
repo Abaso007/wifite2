@@ -81,8 +81,7 @@ if __name__ == '__main__':
     # Should update 'wps' field of a target
     Wash.check_for_wps_and_update_targets(test_file, targets)
 
-    print('Target(BSSID={}).wps = {} (Expected: 1)'.format(
-        targets[0].bssid, targets[0].wps))
+    print(f'Target(BSSID={targets[0].bssid}).wps = {targets[0].wps} (Expected: 1)')
 
     assert targets[0].wps == WPSState.UNLOCKED
 

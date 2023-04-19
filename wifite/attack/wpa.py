@@ -172,11 +172,11 @@ class AttackWPA(Attack):
         if handshake is None:
             # No handshake, attack failed.
             Color.pl('\n{!} {O}WPA handshake capture {R}FAILED:{O} Timed out after %d seconds' % (Configuration.wpa_attack_timeout))
-            return handshake
         else:
             # Save copy of handshake to ./hs/
             self.save_handshake(handshake)
-            return handshake
+
+        return handshake
 
     def load_handshake(self, bssid, essid):
         if not os.path.exists(Configuration.wpa_handshake_dir):
@@ -214,18 +214,16 @@ class AttackWPA(Attack):
             essid_safe = 'UnknownEssid'
         bssid_safe = handshake.bssid.replace(':', '-')
         date = time.strftime('%Y-%m-%dT%H-%M-%S')
-        cap_filename = 'handshake_%s_%s_%s.cap' % (essid_safe, bssid_safe, date)
+        cap_filename = f'handshake_{essid_safe}_{bssid_safe}_{date}.cap'
         cap_filename = os.path.join(Configuration.wpa_handshake_dir, cap_filename)
 
         if Configuration.wpa_strip_handshake:
             Color.p('{+} {C}stripping{W} non-handshake packets, saving to {G}%s{W}...' % cap_filename)
             handshake.strip(outfile=cap_filename)
-            Color.pl('{G}saved{W}')
         else:
             Color.p('{+} saving copy of {C}handshake{W} to {C}%s{W} ' % cap_filename)
             copy(handshake.capfile, cap_filename)
-            Color.pl('{G}saved{W}')
-
+        Color.pl('{G}saved{W}')
         # Update handshake to use the stored handshake file for future operations
         handshake.capfile = cap_filename
 
@@ -238,11 +236,8 @@ class AttackWPA(Attack):
         '''
         if Configuration.no_deauth: return
 
-        for index, client in enumerate([None] + self.clients):
-            if client is None:
-                target_name = '*broadcast*'
-            else:
-                target_name = client
+        for client in [None] + self.clients:
+            target_name = '*broadcast*' if client is None else client
             Color.clear_entire_line()
             Color.pattack('WPA',
                     target,
@@ -260,5 +255,4 @@ if __name__ == '__main__':
         wpa.run()
     except KeyboardInterrupt:
         Color.pl('')
-        pass
     Configuration.exit_gracefully(0)

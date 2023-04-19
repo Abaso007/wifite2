@@ -15,10 +15,7 @@ class Arguments(object):
         self.args = self.get_arguments()
 
     def _verbose(self, msg):
-        if self.verbose:
-            return Color.s(msg)
-        else:
-            return argparse.SUPPRESS
+        return Color.s(msg) if self.verbose else argparse.SUPPRESS
 
     def get_arguments(self):
         ''' Returns parser.args() containing all program arguments '''
@@ -156,7 +153,6 @@ class Arguments(object):
 
 
     def _add_eviltwin_args(self, group):
-        pass
         '''
         group.add_argument('--eviltwin',
             action='store_true',

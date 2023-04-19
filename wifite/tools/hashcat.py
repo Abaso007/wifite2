@@ -45,9 +45,8 @@ class Hashcat(Dependency):
             stdout, stderr = process.get_output()
             if ':' not in stdout:
                 continue
-            else:
-                key = stdout.split(':', 5)[-1].strip()
-                break
+            key = stdout.split(':', 5)[-1].strip()
+            break
 
         if os.path.exists(hccapx_file):
             os.remove(hccapx_file)
@@ -90,9 +89,7 @@ class Hashcat(Dependency):
                 # Failed
                 continue
             else:
-                # Cracked
-                key = stdout.strip().split(':', 1)[1]
-                return key
+                return stdout.strip().split(':', 1)[1]
 
 
 class HcxDumpTool(Dependency):
@@ -135,7 +132,7 @@ class HcxPcapTool(Dependency):
     def __init__(self, target):
         self.target = target
         self.bssid = self.target.bssid.lower().replace(':', '')
-        self.pmkid_file = Configuration.temp('pmkid-%s.16800' % self.bssid)
+        self.pmkid_file = Configuration.temp(f'pmkid-{self.bssid}.16800')
 
     @staticmethod
     def generate_hccapx_file(handshake, show_command=False):

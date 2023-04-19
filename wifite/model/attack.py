@@ -26,16 +26,11 @@ class Attack(object):
             targets = airodump.get_targets()
             continue
 
-        # Ensure this target was seen by airodump
-        airodump_target = None
-        for t in targets:
-            if t.bssid == self.target.bssid:
-                airodump_target = t
-                break
-
+        airodump_target = next(
+            (t for t in targets if t.bssid == self.target.bssid), None
+        )
         if airodump_target is None:
-            raise Exception(
-                'Could not find target (%s) in airodump' % self.target.bssid)
+            raise Exception(f'Could not find target ({self.target.bssid}) in airodump')
 
         return airodump_target
 

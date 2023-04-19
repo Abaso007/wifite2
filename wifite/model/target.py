@@ -6,8 +6,10 @@ from ..util.color import Color
 import re
 
 
+
+
 class WPSState:
-    NONE, UNLOCKED, LOCKED, UNKNOWN = range(0, 4)
+    NONE, UNLOCKED, LOCKED, UNKNOWN = range(4)
 
 
 class Target(object):
@@ -46,7 +48,7 @@ class Target(object):
         elif 'WEP' in self.encryption:
             self.encryption = 'WEP'
         if len(self.encryption) > 4:
-            self.encryption = self.encryption[0:4].strip()
+            self.encryption = self.encryption[:4].strip()
 
         self.power      = int(fields[8].strip())
         if self.power < 0:
@@ -59,8 +61,8 @@ class Target(object):
         self.essid_len   = int(fields[12].strip())
         self.essid       =     fields[13]
         if self.essid == '\\x00' * self.essid_len or \
-                self.essid == 'x00' * self.essid_len or \
-                self.essid.strip() == '':
+                    self.essid == 'x00' * self.essid_len or \
+                    self.essid.strip() == '':
             # Don't display '\x00...' for hidden ESSIDs
             self.essid = None # '(%s)' % self.bssid
             self.essid_known = False
@@ -81,11 +83,11 @@ class Target(object):
         # Filter broadcast/multicast BSSIDs, see https://github.com/derv82/wifite2/issues/32
         bssid_broadcast = re.compile(r'^(ff:ff:ff:ff:ff:ff|00:00:00:00:00:00)$', re.IGNORECASE)
         if bssid_broadcast.match(self.bssid):
-            raise Exception('Ignoring target with Broadcast BSSID (%s)' % self.bssid)
+            raise Exception(f'Ignoring target with Broadcast BSSID ({self.bssid})')
 
         bssid_multicast = re.compile(r'^(01:00:5e|01:80:c2|33:33)', re.IGNORECASE)
         if bssid_multicast.match(self.bssid):
-            raise Exception('Ignoring target with Multicast BSSID (%s)' % self.bssid)
+            raise Exception(f'Ignoring target with Multicast BSSID ({self.bssid})')
 
     def to_str(self, show_bssid=False):
         '''
@@ -94,10 +96,10 @@ class Target(object):
         '''
 
         max_essid_len = 24
-        essid = self.essid if self.essid_known else '(%s)' % self.bssid
+        essid = self.essid if self.essid_known else f'({self.bssid})'
         # Trim ESSID (router name) if needed
         if len(essid) > max_essid_len:
-            essid = essid[0:max_essid_len-3] + '...'
+            essid = f'{essid[:max_essid_len - 3]}...'
         else:
             essid = essid.rjust(max_essid_len)
 
@@ -112,15 +114,9 @@ class Target(object):
         decloaked_char = '*' if self.decloaked else ' '
         essid += Color.s('{P}%s' % decloaked_char)
 
-        if show_bssid:
-            bssid = Color.s('{O}%s  ' % self.bssid)
-        else:
-            bssid = ''
-
-        channel_color = '{G}'
-        if int(self.channel) > 14:
-            channel_color = '{C}'
-        channel = Color.s('%s%s' % (channel_color, str(self.channel).rjust(3)))
+        bssid = Color.s('{O}%s  ' % self.bssid) if show_bssid else ''
+        channel_color = '{C}' if int(self.channel) > 14 else '{G}'
+        channel = Color.s(f'{channel_color}{str(self.channel).rjust(3)}')
 
         encryption = self.encryption.rjust(4)
         if 'WEP' in encryption:
@@ -128,7 +124,7 @@ class Target(object):
         elif 'WPA' in encryption:
             encryption = Color.s('{O}%s' % encryption)
 
-        power = '%sdb' % str(self.power).rjust(3)
+        power = f'{str(self.power).rjust(3)}db'
         if self.power > 50:
             color ='G'
         elif self.power > 35:
@@ -150,8 +146,7 @@ class Target(object):
         if len(self.clients) > 0:
             clients = Color.s('{G}  ' + str(len(self.clients)))
 
-        result = '%s  %s%s  %s  %s  %s  %s' % (
-                essid, bssid, channel, encryption, power, wps, clients)
+        result = f'{essid}  {bssid}{channel}  {encryption}  {power}  {wps}  {clients}'
         result += Color.s('{W}')
         return result
 

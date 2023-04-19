@@ -69,8 +69,9 @@ class AttackPMKID(Attack):
             HcxDumpTool.dependency_name,
             HcxPcapTool.dependency_name
         ]
-        missing_deps = [dep for dep in dependencies if not Process.exists(dep)]
-        if len(missing_deps) > 0:
+        if missing_deps := [
+            dep for dep in dependencies if not Process.exists(dep)
+        ]:
             Color.pl('{!} Skipping PMKID attack, missing required tools: {O}%s{W}' % ', '.join(missing_deps))
             return False
 
@@ -136,8 +137,7 @@ class AttackPMKID(Attack):
 
         Color.clear_entire_line()
         Color.pattack('PMKID', self.target, 'CAPTURE', '{G}Captured PMKID{W}')
-        pmkid_file = self.save_pmkid(pmkid_hash)
-        return pmkid_file
+        return self.save_pmkid(pmkid_hash)
 
 
     def crack_pmkid_file(self, pmkid_file):
@@ -201,7 +201,7 @@ class AttackPMKID(Attack):
         essid_safe = re.sub('[^a-zA-Z0-9]', '', self.target.essid)
         bssid_safe = self.target.bssid.replace(':', '-')
         date = time.strftime('%Y-%m-%dT%H-%M-%S')
-        pmkid_file = 'pmkid_%s_%s_%s.16800' % (essid_safe, bssid_safe, date)
+        pmkid_file = f'pmkid_{essid_safe}_{bssid_safe}_{date}.16800'
         pmkid_file = os.path.join(Configuration.wpa_handshake_dir, pmkid_file)
 
         Color.p('\n{+} Saving copy of {C}PMKID Hash{W} to {C}%s{W} ' % pmkid_file)

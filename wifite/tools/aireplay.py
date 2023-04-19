@@ -31,20 +31,18 @@ class WEPAttackType(object):
         self.name = None
         if type(var) is int:
             for (name,value) in WEPAttackType.__dict__.items():
-                if type(value) is int:
-                    if value == var:
-                        self.name = name
-                        self.value = value
-                        return
+                if type(value) is int and value == var:
+                    self.name = name
+                    self.value = value
+                    return
             raise Exception('Attack number %d not found' % var)
         elif type(var) is str:
             for (name,value) in WEPAttackType.__dict__.items():
-                if type(value) is int:
-                    if name == var:
-                        self.name = name
-                        self.value = value
-                        return
-            raise Exception('Attack name %s not found' % var)
+                if type(value) is int and name == var:
+                    self.name = name
+                    self.value = value
+                    return
+            raise Exception(f'Attack name {var} not found')
         elif type(var) == WEPAttackType:
             self.name = var.name
             self.value = var.value
@@ -71,7 +69,7 @@ class Aireplay(Thread, Dependency):
         super(Aireplay, self).__init__() # Init the parent Thread
 
         self.target = target
-        self.output_file = Configuration.temp('aireplay_%s.output' % attack_type)
+        self.output_file = Configuration.temp(f'aireplay_{attack_type}.output')
         self.attack_type = WEPAttackType(attack_type).value
         self.error = None
         self.status = None
@@ -123,45 +121,43 @@ class Aireplay(Thread, Dependency):
                 if self.attack_type == WEPAttackType.fakeauth:
                     # Look for fakeauth status. Potential Output lines:
                     # (START): 00:54:58  Sending Authentication Request (Open System)
-                    if 'Sending Authentication Request ' in line:
+                    if (
+                        'Sending Authentication Request ' in line
+                        or 'Please specify an ESSID' in line
+                    ):
                         self.status = None # Reset
-                    # (????):  Please specify an ESSID (-e).
-                    elif 'Please specify an ESSID' in line:
-                        self.status = None
-                    # (FAIL):  00:57:43  Got a deauthentication packet! (Waiting 3 seconds)
                     elif 'Got a deauthentication packet!' in line:
                         self.status = False
-                    # (PASS):  20:17:25  Association successful :-) (AID: 1)
-                    # (PASS):  20:18:55  Reassociation successful :-) (AID: 1)
-                    elif 'association successful :-)' in line.lower():
+                    elif (
+                        'Sending Authentication Request ' not in line
+                        and 'Please specify an ESSID' not in line
+                        and 'Got a deauthentication packet!' not in line
+                        and 'association successful :-)' in line.lower()
+                    ):
                         self.status = True
                 elif self.attack_type == WEPAttackType.chopchop:
                     # Look for chopchop status. Potential output lines:
 
                     # (START)  Read 178 packets...
                     read_re = re.compile(r'Read (\d+) packets')
-                    matches = read_re.match(line)
-                    if matches:
-                        self.status = 'Waiting for packet (read %s)...' % matches.group(1)
+                    if matches := read_re.match(line):
+                        self.status = f'Waiting for packet (read {matches[1]})...'
 
                     # Sent 1912 packets, current guess: 70...
                     sent_re = re.compile(r'Sent (\d+) packets, current guess: (\w+)...')
-                    matches = sent_re.match(line)
-                    if matches:
-                        self.status = 'Generating .xor (%s)... current guess: %s' % (self.xor_percent, matches.group(2))
+                    if matches := sent_re.match(line):
+                        self.status = f'Generating .xor ({self.xor_percent})... current guess: {matches[2]}'
 
                     # (DURING) Offset   52 (54% done) | xor = DE | pt = E0 |  152 frames written in  2782ms
                     offset_re = re.compile(r'Offset.*\(\s*(\d+%) done\)')
-                    matches = offset_re.match(line)
-                    if matches:
-                        self.xor_percent = matches.group(1)
-                        self.status = 'Generating .xor (%s)...' % self.xor_percent
+                    if matches := offset_re.match(line):
+                        self.xor_percent = matches[1]
+                        self.status = f'Generating .xor ({self.xor_percent})...'
 
                     # (DONE)   Saving keystream in replay_dec-0516-202246.xor
                     saving_re = re.compile(r'Saving keystream in (.*\.xor)')
-                    matches = saving_re.match(line)
-                    if matches:
-                        self.status = matches.group(1)
+                    if matches := saving_re.match(line):
+                        self.status = matches[1]
 
                     # (ERROR) fakeauth required
                     if 'try running aireplay-ng in authenticated mode' in line:
@@ -172,9 +168,8 @@ class Aireplay(Thread, Dependency):
 
                     # (START)  Read 178 packets...
                     read_re = re.compile(r'Read (\d+) packets')
-                    matches = read_re.match(line)
-                    if matches:
-                        self.status = 'Waiting for packet (read %s)...' % matches.group(1)
+                    if matches := read_re.match(line):
+                        self.status = f'Waiting for packet (read {matches[1]})...'
 
                     # 01:08:15  Waiting for a data packet...
                     if 'Waiting for a data packet' in line:
@@ -182,9 +177,8 @@ class Aireplay(Thread, Dependency):
 
                     # Read 207 packets...
                     trying_re = re.compile(r'Trying to get (\d+) bytes of a keystream')
-                    matches = trying_re.match(line)
-                    if matches:
-                        self.status = 'trying to get %sb of a keystream' % matches.group(1)
+                    if matches := trying_re.match(line):
+                        self.status = f'trying to get {matches[1]}b of a keystream'
 
                     # 01:08:17  Sending fragmented packet
                     if 'Sending fragmented packet' in line:
@@ -196,9 +190,8 @@ class Aireplay(Thread, Dependency):
 
                     # XX:XX:XX  Trying to get 1500 bytes of a keystream
                     trying_re = re.compile(r'Trying to get (\d+) bytes of a keystream')
-                    matches = trying_re.match(line)
-                    if matches:
-                        self.status = 'trying to get %sb of a keystream' % matches.group(1)
+                    if matches := trying_re.match(line):
+                        self.status = f'trying to get {matches[1]}b of a keystream'
 
                     # XX:XX:XX  Got RELAYED packet!!
                     if 'Got RELAYED packet' in line:
@@ -210,25 +203,22 @@ class Aireplay(Thread, Dependency):
 
                     # XX:XX:XX  Saving keystream in fragment-0124-161129.xor
                     saving_re = re.compile(r'Saving keystream in (.*\.xor)')
-                    matches = saving_re.match(line)
-                    if matches:
-                        self.status = 'saving keystream to %s' % matches.group(1)
+                    if matches := saving_re.match(line):
+                        self.status = f'saving keystream to {matches[1]}'
 
-                    # XX:XX:XX  Now you can build a packet with packetforge-ng out of that 1500 bytes keystream
+                                # XX:XX:XX  Now you can build a packet with packetforge-ng out of that 1500 bytes keystream
 
                 else: # Replay, forged replay, etc.
                     # Parse Packets Sent & PacketsPerSecond. Possible output lines:
                     # Read 55 packets (got 0 ARP requests and 0 ACKs), sent 0 packets...(0 pps)
                     # Read 4467 packets (got 1425 ARP requests and 1417 ACKs), sent 1553 packets...(100 pps)
                     read_re = re.compile(r'Read (\d+) packets \(got (\d+) ARP requests and (\d+) ACKs\), sent (\d+) packets...\((\d+) pps\)')
-                    matches = read_re.match(line)
-                    if matches:
-                        pps = matches.group(5)
+                    if matches := read_re.match(line):
+                        pps = matches[5]
                         if pps == '0':
                             self.status = 'Waiting for packet...'
                         else:
-                            self.status = 'Replaying @ %s/sec' % pps
-                    pass
+                            self.status = f'Replaying @ {pps}/sec'
 
     def __del__(self):
         self.stop()
@@ -250,9 +240,7 @@ class Aireplay(Thread, Dependency):
         if Configuration.interface is None:
             raise Exception('Wireless interface must be defined (-i)')
 
-        cmd = ['aireplay-ng']
-        cmd.append('--ignore-negative-one')
-
+        cmd = ['aireplay-ng', '--ignore-negative-one']
         if client_mac is None and len(target.clients) > 0:
             # Client MAC wasn't specified, but there's an associated client. Use that.
             client_mac = target.clients[0].station
@@ -343,7 +331,7 @@ class Aireplay(Thread, Dependency):
                 '-x', str(Configuration.wep_pps)
             ])
         else:
-            raise Exception('Unexpected attack type: %s' % attack_type)
+            raise Exception(f'Unexpected attack type: {attack_type}')
 
         cmd.append(Configuration.interface)
         return cmd
@@ -374,15 +362,14 @@ class Aireplay(Thread, Dependency):
             Configuration.interface
         ]
 
-        cmd = '"%s"' % '" "'.join(cmd)
+        cmd = f""""{'" "'.join(cmd)}\""""
         (out, err) = Process.call(cmd, cwd=Configuration.temp(), shell=True)
-        if out.strip() == 'Wrote packet to: %s' % forged_file:
+        if out.strip() == f'Wrote packet to: {forged_file}':
             return forged_file
-        else:
-            from ..util.color import Color
-            Color.pl('{!} {R}failed to forge packet from .xor file{W}')
-            Color.pl('output:\n"%s"' % out)
-            return None
+        from ..util.color import Color
+        Color.pl('{!} {R}failed to forge packet from .xor file{W}')
+        Color.pl('output:\n"%s"' % out)
+        return None
 
     @staticmethod
     def deauth(target_bssid, essid=None, client_mac=None, num_deauths=None, timeout=2):

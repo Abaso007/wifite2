@@ -158,7 +158,7 @@ class Airodump(Dependency):
 
         # Check targets for WPS
         if not self.skip_wps:
-            capfile = csv_filename[:-3] + 'cap'
+            capfile = f'{csv_filename[:-3]}cap'
             try:
                 Tshark.check_for_wps_and_update_targets(capfile, targets)
             except ValueError:
